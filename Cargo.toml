@@ -8,3 +8,5 @@ edition = "2018"
 
 [dependencies]
 SmolECS = {git = "https://github.com/MultiCoreECS/SmolECS"}
+clap = "2.33.3"
+rand = "0.7.3"
