@@ -129,14 +129,15 @@ fn main() {
     let object_count = matches.value_of("object_count").unwrap_or("10").parse::<i32>().unwrap_or(10);
     let update_iterations = matches.value_of("update_iterations").unwrap_or("100000").parse::<i32>().unwrap_or(100000);
     let transform_type = matches.value_of("transform_type").unwrap_or("0").parse::<i32>().unwrap_or(0);
-
+    
     let mut world = World::new();
+    world.register_comp::<Id>();
+    world.register_comp::<Parent>();
     world.register_comp::<Position>();
+    world.register_comp::<Scale>();
     world.register_comp::<Rotation>();
     world.register_comp::<RotationalVelocity>();
     //world.register_comp::<Children>();
-    world.register_comp::<Parent>();
-    world.register_comp::<Id>();
 
     world.insert(Time {
         beginning: std::time::Instant::now(),
@@ -145,19 +146,19 @@ fn main() {
         delta: 0.0,
     });
     world.insert(EntityStorage::new());
-
+    
     let mut ents = Write::<EntityStorage>::get_data(&world);
+    let mut ids = WriteComp::<Id>::get_data(&world);
+    let mut parents = WriteComp::<Parent>::get_data(&world);
     let mut positions = WriteComp::<Position>::get_data(&world);
     let mut scales = WriteComp::<Scale>::get_data(&world);
     let mut angles = WriteComp::<Rotation>::get_data(&world);
     let mut angle_vels = WriteComp::<RotationalVelocity>::get_data(&world);
     //let mut children_vecs = WriteComp::<Children>::get_data(&world);
-    let mut parents = WriteComp::<Parent>::get_data(&world);
-    let mut ids = WriteComp::<Id>::get_data(&world);
     
     ents.create_entity()
         .add(&mut ids, Id(0));
-
+    
     let mut rng = rand::thread_rng();
     for id in 0..object_count {
         ents.create_entity()
@@ -177,7 +178,7 @@ fn main() {
             scheduler.add(ApplyRotationalVelocities{}, "update_angles", vec![]);
             scheduler.add(ApplyScaleAdjustment{}, "update_scales", vec![]);
             scheduler.add(ApplyTranslationAdjustment{}, "update_position", vec![]);
-        }
+        },
         1 => scheduler.add(ApplyRotationalVelocities{}, "update_angles", vec![]),
         2 => scheduler.add(ApplyScaleAdjustment{}, "update_scales", vec![]),
         3 => scheduler.add(ApplyTranslationAdjustment{}, "update_position", vec![]),
