@@ -83,7 +83,7 @@ impl<'d, 'w: 'd> System<'d, 'w, World> for ApplyScaleAdjustment{
         let mut rng = rand::thread_rng();
 
         for (s) in (&mut scales).join() {
-            s.0 = rng.gen_range(0.0, 10.0);
+            s.0 += rng.gen_range(-0.5, 0.5);
         }
     }
 }
@@ -148,6 +148,7 @@ fn main() {
 
     let mut ents = Write::<EntityStorage>::get_data(&world);
     let mut positions = WriteComp::<Position>::get_data(&world);
+    let mut scales = WriteComp::<Scale>::get_data(&world);
     let mut angles = WriteComp::<Rotation>::get_data(&world);
     let mut angle_vels = WriteComp::<RotationalVelocity>::get_data(&world);
     //let mut children_vecs = WriteComp::<Children>::get_data(&world);
@@ -162,6 +163,7 @@ fn main() {
         ents.create_entity()
             .add(&mut ids, Id(id as usize+1))
             .add(&mut positions, Position{x: rng.gen_range(0.0, 100.0), y: rng.gen_range(0.0, 100.0)})
+            .add(&mut scales, Scale(rng.gen_range(0.0, 2.0)))
             .add(&mut angles, Rotation(rng.gen_range(0.0, 360.0)))
             .add(&mut angle_vels, RotationalVelocity(rng.gen_range(0.0, 1.0)))
             //.add(&mut children_vecs, Children(Vec::from([last_entity])));
@@ -189,6 +191,7 @@ fn main() {
     drop(ids);
     drop(parents);
     drop(positions);
+    drop(scales);
     drop(angles);
     drop(angle_vels);
 
@@ -199,11 +202,12 @@ fn main() {
     let ids = ReadComp::<Id>::get_data(&world);
     let parents = ReadComp::<Parent>::get_data(&world);
     let positions = ReadComp::<Position>::get_data(&world);
+    let scales = ReadComp::<Scale>::get_data(&world);
     let angles = ReadComp::<Rotation>::get_data(&world);
     let angle_vels = ReadComp::<RotationalVelocity>::get_data(&world);
 
-    for (id, parent, position, angle, angle_vel) in (&ids, &parents, &positions, &angles, &angle_vels).join() {
-        println!("ID {} : Parent {} : ({}, {}) : {} degs : {} per second", id.0, parent.0, position.x, position.y, angle.0, angle_vel.0);
+    for (id, parent, position, scale, angle, angle_vel) in (&ids, &parents, &positions, &scales, &angles, &angle_vels).join() {
+        println!("ID {} : Parent {} : ({}, {}) : Scaled {} units : {} degs : {} per second", id.0, parent.0, position.x, position.y, scale.0, angle.0, angle_vel.0);
     }
 
     drop(ids);
