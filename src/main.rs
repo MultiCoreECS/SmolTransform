@@ -25,6 +25,9 @@ pub struct Rotation(f32);
 pub struct RotationalVelocity(f32);
 
 #[derive(Copy, Clone)]
+pub struct Scale(f32);
+
+#[derive(Copy, Clone)]
 pub struct Id(usize);
 
 #[derive(Copy, Clone)]
@@ -70,6 +73,37 @@ impl<'d, 'w: 'd> System<'d, 'w, World> for ApplyRotationalVelocities{
     }
 }
 
+pub struct ApplyScaleAdjustment;
+impl<'d, 'w: 'd> System<'d, 'w, World> for ApplyScaleAdjustment{
+    type SystemData = (
+        WriteComp<'d, Scale>
+    );
+
+    fn run(&self, mut scales: Self::SystemData) {
+        let mut rng = rand::thread_rng();
+
+        for (s) in (&mut scales).join() {
+            s.0 = rng.gen_range(0.0, 10.0);
+        }
+    }
+}
+
+pub struct ApplyTranslationAdjustment;
+impl<'d, 'w: 'd> System<'d, 'w, World> for ApplyTranslationAdjustment{
+    type SystemData = (
+        WriteComp<'d, Position>
+    );
+
+    fn run(&self, mut positions: Self::SystemData) {
+        let mut rng = rand::thread_rng();
+
+        for (p) in (&mut positions).join() {
+            p.x += rng.gen_range(-5.0, 5.0);
+            p.y += rng.gen_range(-5.0, 5.0);
+        }
+    }
+}
+
 fn main() {
     let matches = App::new("SmolTransform")
         .version("1.0")
@@ -85,10 +119,16 @@ fn main() {
             .long("update_iterations")
             .help("Sets the number of transform update iterations to perform")
             .takes_value(true))
+        .arg(Arg::with_name("transform_type")
+            .short("t")
+            .long("transform_type")
+            .help("Sets the type of transform. 0=all, 1=rotation, 2=scale, 3=translation")
+            .takes_value(true))
         .get_matches();
 
     let object_count = matches.value_of("object_count").unwrap_or("10").parse::<i32>().unwrap_or(10);
     let update_iterations = matches.value_of("update_iterations").unwrap_or("100000").parse::<i32>().unwrap_or(100000);
+    let transform_type = matches.value_of("transform_type").unwrap_or("0").parse::<i32>().unwrap_or(0);
 
     let mut world = World::new();
     world.register_comp::<Position>();
@@ -130,7 +170,20 @@ fn main() {
     
     let mut scheduler = SystemScheduler::new(Arc::new(ThreadPoolBuilder::new().num_threads(4).build().unwrap()));
     //scheduler.add(UpdateTime{}, "update_time", vec![]);
-    scheduler.add(ApplyRotationalVelocities{}, "update_angles", vec![]);//"update_time"]);
+    match transform_type {
+        0 => {
+            scheduler.add(ApplyRotationalVelocities{}, "update_angles", vec![]);
+            scheduler.add(ApplyScaleAdjustment{}, "update_scales", vec![]);
+            scheduler.add(ApplyTranslationAdjustment{}, "update_position", vec![]);
+        }
+        1 => scheduler.add(ApplyRotationalVelocities{}, "update_angles", vec![]),
+        2 => scheduler.add(ApplyScaleAdjustment{}, "update_scales", vec![]),
+        3 => scheduler.add(ApplyTranslationAdjustment{}, "update_position", vec![]),
+        _ => {
+            println!("Invalid transform type. Action cancelled.");
+            return;
+        }
+    }
     
     drop(ents);
     drop(ids);
