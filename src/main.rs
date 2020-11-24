@@ -214,6 +214,7 @@ fn main() {
     drop(ids);
     drop(parents);
     drop(positions);
+    drop(scales);
     drop(angles);
     drop(angle_vels);
 }
